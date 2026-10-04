@@ -143,3 +143,15 @@ def test_spider_is_rate_limit_conservative_by_default():
     assert UsedPcScoutSpider.max_blocked_retries == 0
     assert UsedPcScoutSpider.download_delay >= 2.0
     assert UsedPcScoutSpider.autothrottle_max_delay >= 60.0
+
+
+def test_seed_priority_prefers_cheap_donor_when_hardware_is_equal():
+    cheap = listing_seed_priority(
+        "Ryzen 5 3600 RX 580 16GB DDR4 usado R$ 350",
+        "https://sp.olx.com.br/x/informatica/computadores-e-desktops/cheap-1530711201",
+    )
+    expensive = listing_seed_priority(
+        "Ryzen 5 3600 RX 580 16GB DDR4 usado R$ 2.500",
+        "https://sp.olx.com.br/x/informatica/computadores-e-desktops/expensive-1530711202",
+    )
+    assert cheap > expensive + 30
