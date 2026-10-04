@@ -55,3 +55,26 @@ def test_service_listing_is_ineligible_even_when_cheap():
     )
     assert result["eligible"] is False
     assert result["rejection_reason"] == "service_ad"
+
+
+from campaigns.used_pc_scout.marketplaces import discover_listing_urls, marketplace_from_url
+
+
+def test_marketplace_url_discovery_keeps_real_listing_links_and_dedupes():
+    hrefs = [
+        "https://sp.olx.com.br/sao-paulo-e-regiao/informatica/computadores-e-desktops/pc-gamer-com-defeito-1530710625?lis=listing_1000",
+        "https://sp.olx.com.br/sao-paulo-e-regiao/informatica/computadores-e-desktops/pc-gamer-com-defeito-1530710625",
+        "https://produto.mercadolivre.com.br/MLB-1234567890-pc-gamer-com-defeito-_JM#polycard_client=search-nordic",
+        "https://www.olx.com.br/anuncios/pc-nao-liga",
+        "https://lista.mercadolivre.com.br/pc-gamer-com-defeito",
+    ]
+    urls = discover_listing_urls(hrefs)
+    assert urls == [
+        "https://sp.olx.com.br/sao-paulo-e-regiao/informatica/computadores-e-desktops/pc-gamer-com-defeito-1530710625",
+        "https://produto.mercadolivre.com.br/MLB-1234567890-pc-gamer-com-defeito-_JM",
+    ]
+
+
+def test_marketplace_from_url():
+    assert marketplace_from_url("https://sp.olx.com.br/x/informatica/computadores-e-desktops/foo-1234567890") == "olx"
+    assert marketplace_from_url("https://produto.mercadolivre.com.br/MLB-123-foo-_JM") == "mercadolivre"
