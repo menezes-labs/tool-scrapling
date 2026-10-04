@@ -155,3 +155,11 @@ def test_seed_priority_prefers_cheap_donor_when_hardware_is_equal():
         "https://sp.olx.com.br/x/informatica/computadores-e-desktops/expensive-1530711202",
     )
     assert cheap > expensive + 30
+
+
+def test_listing_item_keeps_description_excerpt_for_human_review():
+    sample = "Ryzen 5 5500, 16GB DDR4, SSD NVMe 512GB. Placa de vídeo com defeito."
+    excerpt = UsedPcScoutSpider._description_excerpt(sample)
+    assert "Ryzen 5 5500" in excerpt
+    assert "Placa de vídeo com defeito" in excerpt
+    assert len(excerpt) <= 2000
