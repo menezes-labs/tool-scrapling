@@ -87,3 +87,59 @@ def test_shared_codebuild_job_invokes_campaign_as_module():
     job = (repo_root / ".codebuild" / "jobs" / "used-pc-scout.sh").read_text(encoding="utf-8")
     assert "python -m campaigns.used_pc_scout.run" in job
     assert "python campaigns/used_pc_scout/run.py" not in job
+
+
+from campaigns.used_pc_scout.marketplaces import (
+    listing_seed_priority,
+    select_listing_urls,
+)
+from campaigns.used_pc_scout.scout import UsedPcScoutSpider
+
+
+def test_seed_priority_prefers_useful_donor_hardware_over_generic_pc():
+    useful = listing_seed_priority(
+        "PC gamer com defeito Ryzen 5 3600 RX 580 16GB DDR4 R$ 450",
+        "https://sp.olx.com.br/x/informatica/computadores-e-desktops/pc-ryzen-rx580-1530710625",
+    )
+    generic = listing_seed_priority(
+        "Computador com defeito R$ 450",
+        "https://sp.olx.com.br/x/informatica/computadores-e-desktops/computador-defeito-1530710626",
+    )
+    assert useful > generic
+
+
+def test_select_listing_urls_caps_fanout_but_keeps_exploration_slots():
+    links = [
+        (
+            f"https://sp.olx.com.br/x/informatica/computadores-e-desktops/generico-{1530710700 + i}",
+            f"Computador com defeito número {i} R$ {100 + i}",
+        )
+        for i in range(12)
+    ]
+    links.extend(
+        [
+            (
+                "https://sp.olx.com.br/x/informatica/computadores-e-desktops/ryzen-rx580-1530710998",
+                "Ryzen 5 3600 RX 580 16GB DDR4 com defeito R$ 500",
+            ),
+            (
+                "https://sp.olx.com.br/x/informatica/computadores-e-desktops/i5-gtx1660-1530710999",
+                "i5 9400 GTX 1660 16GB DDR4 para peças R$ 650",
+            ),
+        ]
+    )
+
+    selected = select_listing_urls(links, limit=6, exploration_slots=2)
+
+    assert len(selected) == 6
+    assert selected[0].endswith("ryzen-rx580-1530710998")
+    assert selected[1].endswith("i5-gtx1660-1530710999")
+    assert any("generico-" in url for url in selected[-2:])
+
+
+def test_spider_is_rate_limit_conservative_by_default():
+    assert UsedPcScoutSpider.concurrent_requests == 2
+    assert UsedPcScoutSpider.concurrent_requests_per_domain == 1
+    assert UsedPcScoutSpider.max_blocked_retries == 0
+    assert UsedPcScoutSpider.download_delay >= 2.0
+    assert UsedPcScoutSpider.autothrottle_max_delay >= 60.0
