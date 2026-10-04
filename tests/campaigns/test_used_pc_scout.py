@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from campaigns.used_pc_scout.scoring import (
     classify_defect_risk,
     extract_hardware_signals,
@@ -78,3 +80,10 @@ def test_marketplace_url_discovery_keeps_real_listing_links_and_dedupes():
 def test_marketplace_from_url():
     assert marketplace_from_url("https://sp.olx.com.br/x/informatica/computadores-e-desktops/foo-1234567890") == "olx"
     assert marketplace_from_url("https://produto.mercadolivre.com.br/MLB-123-foo-_JM") == "mercadolivre"
+
+
+def test_shared_codebuild_job_invokes_campaign_as_module():
+    repo_root = Path(__file__).resolve().parents[2]
+    job = (repo_root / ".codebuild" / "jobs" / "used-pc-scout.sh").read_text(encoding="utf-8")
+    assert "python -m campaigns.used_pc_scout.run" in job
+    assert "python campaigns/used_pc_scout/run.py" not in job
