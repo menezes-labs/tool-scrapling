@@ -49,3 +49,22 @@ No CodeBuild project was started or modified. No AWS project metadata could be i
 - checkpoint interval: 120 seconds.
 
 These limits are environment-variable overrides in the buildspec/runner.
+
+
+## Shared runner migration — 2026-10-04
+
+The campaign no longer owns a dedicated CodeBuild buildspec.
+
+Execution contract:
+
+```text
+shared project: menezes-shared-sandbox
+repo: menezes-labs/tool-scrapling
+ref: feat/used-pc-salvage-scout
+job: .codebuild/jobs/used-pc-scout.sh
+```
+
+The old `campaigns/used_pc_scout/buildspec.yml` was removed. The shared runner stack lives in
+`menezes-platform/ops-infra-workbench@feat/shared-codebuild-sandbox`.
+
+Live execution is still blocked by expired AWS CLI authentication. No CodeBuild build has been started.
