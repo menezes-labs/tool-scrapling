@@ -7,7 +7,7 @@ from typing import AsyncGenerator
 from scrapling.fetchers import FetcherSession
 from scrapling.spiders import Request, Response, Spider
 
-from campaigns.used_pc_scout.marketplaces import discover_listing_urls, marketplace_from_url
+from campaigns.used_pc_scout.marketplaces import marketplace_from_url, select_listing_urls
 from campaigns.used_pc_scout.scoring import parse_brl_price, score_listing
 
 
@@ -31,19 +31,21 @@ class UsedPcScoutSpider(Spider):
     name = "used-pc-salvage-scout"
     allowed_domains = {"olx.com.br", "mercadolivre.com.br"}
     robots_txt_obey = True
-    concurrent_requests = 6
-    concurrent_requests_per_domain = 2
-    download_delay = 0.6
+    concurrent_requests = 2
+    concurrent_requests_per_domain = 1
+    download_delay = 2.5
     autothrottle_enabled = True
-    autothrottle_start_delay = 1.0
-    autothrottle_max_delay = 25.0
-    autothrottle_target_concurrency = 1.5
-    max_blocked_retries = 2
+    autothrottle_start_delay = 2.5
+    autothrottle_max_delay = 60.0
+    autothrottle_target_concurrency = 0.75
+    max_blocked_retries = 0
 
     def __init__(self, *args, **kwargs):
         self.max_seed_pages = int(os.getenv("SCOUT_MAX_SEED_PAGES", "10"))
         self.max_price = float(os.getenv("SCOUT_MAX_PRICE", "1200"))
         self.min_score = float(os.getenv("SCOUT_MIN_SCORE", "5"))
+        self.details_per_seed = int(os.getenv("SCOUT_DETAILS_PER_SEED", "8"))
+        self.exploration_slots = int(os.getenv("SCOUT_EXPLORATION_SLOTS", "2"))
         custom_seeds = os.getenv("SCOUT_SEEDS", "").strip()
         self.start_urls = [x.strip() for x in custom_seeds.split(",") if x.strip()] or list(DEFAULT_SEEDS)
         super().__init__(*args, **kwargs)
@@ -60,14 +62,28 @@ class UsedPcScoutSpider(Spider):
             yield item
 
     async def parse_seed(self, response: Response):
-        hrefs = []
+        candidates: list[tuple[str, str]] = []
         for link in response.css("a"):
             href = link.attrib.get("href")
-            if href:
-                hrefs.append(response.urljoin(str(href)))
+            if not href:
+                continue
+            url = response.urljoin(str(href))
+            label = str(link.get_all_text(" ", strip=True))
+            candidates.append((url, label))
 
-        for url in discover_listing_urls(hrefs):
-            yield Request(url, sid="fast", callback=self.parse_listing, priority=10)
+        selected_urls = select_listing_urls(
+            candidates,
+            limit=self.details_per_seed,
+            exploration_slots=self.exploration_slots,
+        )
+        for url in selected_urls:
+            yield Request(
+                url,
+                sid="fast",
+                callback=self.parse_listing,
+                priority=10,
+                meta={"selected_from_seed": response.url},
+            )
 
         request_meta = response.request.meta if response.request else {}
         depth = int(request_meta.get("seed_depth", 1))
