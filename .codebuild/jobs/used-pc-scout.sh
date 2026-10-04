@@ -12,7 +12,7 @@ python -m pip install -e ".[fetchers]"
 python -m pip install pytest
 
 python -m pytest -q tests/campaigns/test_used_pc_scout.py
-python campaigns/used_pc_scout/run.py
+python -m campaigns.used_pc_scout.run
 
 test -s artifacts/used-pc-scout/report.md
 test -s artifacts/used-pc-scout/candidates.json
