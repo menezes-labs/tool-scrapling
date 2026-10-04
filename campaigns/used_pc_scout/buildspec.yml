@@ -1,0 +1,34 @@
+version: 0.2
+
+env:
+  variables:
+    SCOUT_MAX_PRICE: "1200"
+    SCOUT_MAX_SEED_PAGES: "10"
+    SCOUT_MIN_SCORE: "5"
+    SCOUT_OUTPUT_DIR: "artifacts/used-pc-scout"
+    SCOUT_CRAWL_DIR: ".crawl/used-pc-scout"
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.13
+    commands:
+      - python -m pip install --upgrade pip
+      - python -m pip install -e ".[fetchers]"
+      - python -m pip install pytest
+  pre_build:
+    commands:
+      - python -m pytest -q tests/campaigns/test_used_pc_scout.py
+  build:
+    commands:
+      - python campaigns/used_pc_scout/run.py
+  post_build:
+    commands:
+      - test -f artifacts/used-pc-scout/report.md
+      - test -f artifacts/used-pc-scout/candidates.json
+      - sed -n '1,140p' artifacts/used-pc-scout/report.md
+
+artifacts:
+  files:
+    - "artifacts/used-pc-scout/**/*"
+  discard-paths: no
