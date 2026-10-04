@@ -133,6 +133,7 @@ class UsedPcScoutSpider(Spider):
             "marketplace": marketplace_from_url(response.url),
             "url": response.url,
             "title": title[:300],
+            "description_excerpt": self._description_excerpt(description),
             "price_brl": price,
             "risk": score["risk"],
             "signals": score["signals"],
@@ -150,6 +151,10 @@ class UsedPcScoutSpider(Spider):
         if float(item.get("score", 0)) < self.min_score:
             return None
         return item
+
+    @staticmethod
+    def _description_excerpt(value: str) -> str:
+        return re.sub(r"\s+", " ", value or "").strip()[:2000]
 
     @staticmethod
     def _first_text(response: Response, selectors: tuple[str, ...]) -> str:
