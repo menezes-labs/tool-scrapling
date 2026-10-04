@@ -16,6 +16,8 @@ DEFAULT_SEEDS = [
     "https://www.olx.com.br/anuncios/pc-com-defeito",
     "https://www.olx.com.br/anuncios/computador-com-defeito",
     "https://www.olx.com.br/anuncios/pc-gamer-com-defeito",
+    "https://www.olx.com.br/anuncios/computador-para-retirar-pecas",
+    "https://www.olx.com.br/anuncios/pc-gamer-para-pecas",
     "https://lista.mercadolivre.com.br/pc-gamer-com-defeito-usado",
     "https://lista.mercadolivre.com.br/computador-com-defeito-usado",
     "https://lista.mercadolivre.com.br/pc-nao-liga-usado",
