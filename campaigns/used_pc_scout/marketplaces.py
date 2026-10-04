@@ -81,9 +81,43 @@ _LOW_VALUE_TERMS = (
 )
 
 
+_CARD_PRICE_RE = re.compile(r"R\$\s*([0-9][0-9.]*?(?:,[0-9]{2})?)(?=\s|$)")
+
+
+def _card_price(text: str) -> float | None:
+    match = _CARD_PRICE_RE.search(text or "")
+    if not match:
+        return None
+    raw = match.group(1)
+    if "," in raw:
+        raw = raw.replace(".", "").replace(",", ".")
+    elif raw.count(".") >= 1:
+        tail = raw.rsplit(".", 1)[-1]
+        if len(tail) == 3 or raw.count(".") > 1:
+            raw = raw.replace(".", "")
+    try:
+        return float(raw)
+    except ValueError:
+        return None
+
+
 def listing_seed_priority(text: str, url: str = "") -> int:
     normalized = re.sub(r"\s+", " ", (text or "").lower()).strip()
     score = sum(weight for term, weight in _PRIORITY_TERMS if term in normalized)
+    price = _card_price(text)
+    if price is not None:
+        if price <= 250:
+            score += 35
+        elif price <= 500:
+            score += 25
+        elif price <= 800:
+            score += 12
+        elif price <= 1200:
+            score += 2
+        elif price > 2000:
+            score -= 30
+        else:
+            score -= 12
     if any(term in normalized for term in _LOW_VALUE_TERMS):
         score -= 60
     if "sp.olx.com.br" in (url or "").lower():
